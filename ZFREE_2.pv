@@ -106,6 +106,14 @@ let processCA(skCA: bitstring) =
 (******************************************************************)
 (* ISP Assistant process *)
 
+(******************************)
+(* OutLine                    *)
+(* ZFree Setup Phase          *)
+(* 0 TLS Setup                *)
+(* 1 Handshake                *)
+(* 2 Connection Establishment *)
+(******************************)
+
 let processISPAssistant() = 
 	
 	in(c, certificate_of_ISP_Assistant: bitstring);
