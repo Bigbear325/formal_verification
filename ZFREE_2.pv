@@ -115,13 +115,31 @@ let processCA(skCA: bitstring) =
 (******************************)
 
 let processISPAssistant() = 
-	
-	in(c, certificate_of_ISP_Assistant: bitstring);
 
-	(* Step 0 *)
-	new TLS_Hello: bitstring;
-	out(c, TLS_Hello);
+    (* in(c, certificate_of_Assistant: bitstring);*)
 
+    (* isp_client init *)
+
+    in(c, (tls_isp_version: bitstring, tls_isp_cipher_suites: bitstring,
+            legacy_compression_methods: bitstring));
+
+    (******************************)
+
+	(* Step 0 * tls_isp hello + key_share)
+	(*  new TLS_Hello: bitstring;  *)
+
+    new tls_isp_random:bitstring;
+    new X: bitstring;
+    let tls_isp_key_shares = exp(g ^ X) in (* g^X *)
+    let tls_isp_hello = (tls_isp_version, tls_isp_random, tls_isp_cipher_suites, tls_isp_key_shares) in
+
+    (* tls_isp hello out*)
+    out(c, tls_isp_hello);
+
+    (******************************)
+
+
+    (* tls_isp in *)
 	in(c, Server_Agent_Handshake_Response: bitstring);
 	let (Get_TLS_Hello: bitstring, Server_Agent_Certificate: bitstring) = Server_Agent_Handshake_Response in
 
@@ -170,12 +188,65 @@ let processISPAssistant() =
 (* Server Agent process *)
 
 let processServerAgent() = 
-	
-	(* Step 0 *)
-	in(c, certificate_of_Server_Agent: bitstring);
-	in(c, TLS_Hello: bitstring);
 
-	let Server_Agent_Handshake_Response = (TLS_Hello, certificate_of_Server_Agent) in
+    (* Setup *)
+    in(c, (tls_sa_version: bitstring, tls_sa_cipher_suites: bitstring));
+
+    (* tls_sa input *)
+    in(c, tls_isp_hello: bitstring);
+
+	(* Step 0 *)
+    (* in(c, certificate_of_Server_Agent: bitstring); *)
+    (* in(c, tls_isp_hello: bitstring); *)
+
+    let (tls_isp_version: bitstring, tls_isp_random: bitstring,
+            tls_isp_cipher_suites: bitstring, tls_isp_key_shares) = tls_isp_hello in
+
+    if tls_isp_version = tls_sa_version &&
+        tls_isp_cipher_suites = tls_sa_cipher_suites then
+
+    (* sa hello + key share*)
+
+    new sa_random: bitstring
+    new Y: bitstring;
+    let tls_sa_key_share = exp(g, Y) in (* g^Y *)
+    let tls_sa_hello = (tls_sa_version, sa_random, tls_sa_cipher_suites, tls_sa_key_share) in
+
+
+
+    (******************************)
+    (* SS, ES, xSS, xES *) (* Full handshake: SS = ES *)
+    let static_secret = exp(client_key_shares, Y) in     (* SS: (g^{X})^Y = g^{XY} *)
+    let ephemeral_secret = exp(client_key_shares, Y) in  (* ES: (g^{X})^Y = g^{XY} *)
+    let xss = HKDF_Extract(hkdf_zeros, static_secret) in
+    let xes = HKDF_Extract(hkdf_zeros, ephemeral_secret) in
+
+    ≈
+
+    (* Handshake traffic keys: client_write_key, server_write_key, client_write_iv, server_write_iv *)
+    
+    let handshake_context = H((tls_tls_hello, tls_sa_hello)) in
+
+    let handshake_client_write_key = HKDF_Expand(xes, ((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_KEY), handshake_context), hkdf_length_handshake_client_write_key) in
+
+    let handshake_server_write_key = HKDF_Expand(xes, ((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_KEY), handshake_context), hkdf_length_handshake_server_write_key) in
+
+    let handshake_client_write_iv = HKDF_Expand(xes, ((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_IV), handshake_context), hkdf_length_handshake_client_write_IV) in
+
+    let handshake_server_write_iv = HKDF_Expand(xes, ((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_IV), handshake_context), hkdf_length_handshake_server_write_IV) in
+
+    (* where part of ZFree will be!!!!!!!!!!*)
+    (* ServerConfiguration: optional *) 
+    new configuration_id: bitstring;
+    new expiration_date: bitstring;
+    let static_key_share = server_key_share in 
+    let server_configuration = (configuration_id, expiration_date, static_key_share, 
+    early_data_type) in 
+
+
+
+(******************************)(******************************)(******************************)
+    (* tls_sa_server_hello out*)
 	out(c, Server_Agent_Handshake_Response);
 
 	(* Step 1 *)
