@@ -1,0 +1,188 @@
+(******************************************************************)
+
+free c: channel.
+
+(* Hash *)
+fun H(bitstring): bitstring.
+
+(* Control Plane Hash *)
+fun SHA256(bitstring): bitstring.
+
+(* Signature *)
+fun sign(bitstring, bitstring): bitstring.
+fun pk(bitstring): bitstring.
+ 
+reduc forall x: bitstring, sk: bitstring; verify(sign(x, sk), x, pk(sk)) = true.
+
+(* Host Information *)
+free HostInfoC, HostInfoS, HostInfoISP, HostInfoSA, HostInfoCA: bitstring.
+
+(* CP certificate *)
+free HostInfoCP:bitstring [private].
+
+(******************************************************************)
+(* Queries: secrecy *) 
+
+(* Queries: authentication *) 
+
+(******************************************************************)
+(* Certificate Authority (CA) process *)
+
+let processCA(skCA: bitstring) =
+     
+    in(c, (HostInfoX: bitstring, pkX: bitstring));
+     
+    if HostInfoX <> HostInfoC && 
+       HostInfoX <> HostInfoS &&
+       HostInfoX <> HostInfoCA then 
+    let signCA_pkX = sign(H((HostInfoCA, HostInfoX, pkX)), skCA) in 
+    let X_certificate = (HostInfoCA, HostInfoX, pkX, signCA_pkX) in
+    out(c, X_certificate);
+	
+	let certificate_of_ISP_Assistant = (HostInfoCA, HostInfoISP, pkX, signCA_pkX) in
+	let certificate_of_Server_Agent = (HostInfoCA, HostInfoSA, pkX, signCA_pkX) in
+	out(c, certificate_of_ISP_Assistant);
+	out(c, certificate_of_Server_Agent);
+
+	
+
+	0.
+(******************************************************************)
+(* ISP Assistant process *)
+
+let processISPAssistant() = 
+	
+	in(c, certificate_of_ISP_Assistant: bitstring);
+
+	(* Step 0 *)
+	new TLS_Hello: bitstring;
+	out(c, TLS_Hello);
+
+	in(c, Server_Agent_Handshake_Response: bitstring);
+	let (Get_TLS_Hello: bitstring, Server_Agent_Certificate: bitstring) = Server_Agent_Handshake_Response in
+
+	(* Step 1 *)
+	new Policy: bitstring;
+	new OptionListLength: bitstring;
+	new OptionList: bitstring;
+
+	let ZFree_HELLO_ISP = (Policy, OptionListLength, OptionList) in 
+	out(c, ZFree_HELLO_ISP);
+
+	in(c, ZFree_HELLO_Server_Agent: bitstring);
+
+	(* Step 2 *)
+	new HashType: bitstring;
+	new ParseType: bitstring;
+	new connectionType: bitstring;
+	new Policy2: bitstring;
+	new AddressListLength: bitstring;
+	new AddressList: bitstring;
+
+	let ZFree_CONNECT = (HashType, ParseType, connectionType, Policy2, AddressListLength,  AddressList) in 
+	out(c, ZFree_CONNECT);
+
+	(* Step 4 *)
+	in(c, ResponseData: bitstring);
+	out(c, ResponseData);
+
+	in(c, ZFree_HASHPUSH: bitstring);
+	(* do some control plane match *)
+
+	(* Step 5 *)
+	new TimeStamp: bitstring;
+	let ZFree_HASHPULL = TimeStamp in
+	out(c, ZFree_HASHPULL);
+
+	(* Step 6 *)
+	new StatusCode: bitstring;
+	new UnmatchedHashListLength: bitstring;
+	new HashValue: bitstring;
+	let ZFree_STATUS = (StatusCode, UnmatchedHashListLength, HashValue) in 
+	out(c, ZFree_STATUS);
+
+	0.
+(******************************************************************)
+(* Server Agent process *)
+
+let processServerAgent() = 
+	
+	(* Step 0 *)
+	in(c, certificate_of_Server_Agent: bitstring);
+	in(c, TLS_Hello: bitstring);
+
+	let Server_Agent_Handshake_Response = (TLS_Hello, certificate_of_Server_Agent) in
+	out(c, Server_Agent_Handshake_Response);
+
+	(* Step 1 *)
+	in(c, ZFree_HELLO_ISP: bitstring);
+	new ZFree_HELLO_Server_Agent: bitstring;
+	out(c, ZFree_HELLO_Server_Agent);
+
+	(* Step 2 *)
+	in(c, ZFree_CONNECT: bitstring);
+	new ZFree_ACK: bitstring;
+	out(c, ZFree_ACK);
+
+	(* Step 4 *)
+	in(c, ResponseData: bitstring);
+	let hashed_response_data = SHA256(ResponseData) in
+	out(c, ResponseData);
+
+	new HashValueLength: bitstring;
+	new HashValue: bitstring;
+	new TimeStamp: bitstring;
+	let ZFree_HASHPUSH = (HashValueLength, HashValue, TimeStamp, ResponseData) in 
+	out(c, ZFree_HASHPUSH);
+
+	(* Step 5 *)
+	in(c, ZFree_HASHPULL: bitstring);
+
+	(* Step 6 *)
+	in(c, ZFree_STATUS: bitstring);
+
+	0.
+
+(******************************************************************)
+(* Server process *)
+
+let processServer() = 
+	
+	(* Step 4 *)
+	new ResponseData: bitstring;
+	out(c, ResponseData);
+	
+	0.
+
+(******************************************************************)
+(* Client process *)
+
+let processClient() = 
+	
+	(* Step 4 *)
+	in(c, ResponseData: bitstring);
+
+	0.
+
+(******************************************************************)
+(* Main process *)
+
+process
+    (* Certificate Authority (CA) : skCA, pkCA *)
+      new skCA: bitstring;
+      let pkCA = pk(skCA) in
+      out(c, pkCA);
+    
+
+    ((!processServerAgent()) |
+     (!processISPAssistant()) |
+     (!processServer()) |
+     (!processClient()) |
+     (!processCA(skCA))
+    )
+
+
+(******************************************************************)
+(* end of file *)
+
+
