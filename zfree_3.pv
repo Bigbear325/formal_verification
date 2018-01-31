@@ -726,38 +726,20 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
 
-
-(*******************************************)
-
-    (* Application traffic keys: client_write_key, server_write_key, 
-                                 client_write_iv, server_write_iv *)
-      
-
-
-    (* Application Data *) 
-
-    (******************************************************************)
-    (****     CP Server process         ****)
-    (****   non-TLS datapath version    ****)
-
-    (**** note: pay attation to the channel ****)
-
-    (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
-
-
 let processServer() =
-
-    (* Step 4 *)
-    new ZeroRating_Data1_k: bitstring;
-    out(d, ZeroRating_Data1_k);
     
-    new ZeroRating_Data2: bitstring;
+    in(c, (ZeroRating_Data1: bitstring, ZeroRating_Data2: bitstring, ZeroRating_Data3: bitstring, ZeroRating_Data4: bitstring));
+    (* Step 4 *)
+
+    out(d, ZeroRating_Data1);
+    
+
     out(d, ZeroRating_Data2);
     
-    new ZeroRating_Data3: bitstring;
+
     out(d, ZeroRating_Data3);
     
-    new ZeroRating_Data4: bitstring;
+
     out(d, ZeroRating_Data4);
 
     0.
@@ -793,7 +775,7 @@ let processCA(skCA: bitstring) =
       let X_certificate = (HostInfoCA, HostInfoX, pkX, signCA_pkX) in
       out(c, X_certificate).
 
-0.
+
 (******************************************************************)
 (* Main process *)
 
