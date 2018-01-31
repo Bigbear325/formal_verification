@@ -794,8 +794,8 @@ process
     ((!processClient(pkCA)) | 
      (!processServer(skS, pkS, server_certificate, pkCA)) | 
 
-     (!processServer())
-     (!processClient())
+     (!processServer())|
+     (!processClient())|
      (!processCA(skCA))
     )
 
