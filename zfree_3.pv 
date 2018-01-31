@@ -56,7 +56,9 @@ Auth | {CertificateVerify*}
              Message flow for full TLS Handshake
 *)
 
-free c: channel.
+free c: channel.    (* control plane channel *)
+free d: channel.    (* data plane channel *)
+
 
 (* Null, Empty: const. *)
 const null: bitstring [data].
@@ -187,7 +189,7 @@ query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring;
 
 
 (******************************************************************)
-(* Client process *)
+(* ISP assistant process *)
 
 (*** in here, the client is the ISP assistant ***)
 
@@ -367,7 +369,7 @@ let processClient(pkCA: bitstring)=
     in(c, (isp_Policy: bitstring, isp_OptionListLength: bitstring, isp_OptionList: bitstring));
 
 
-    (**  Step 1 ZFree HandShake **)
+    (**  Step 1 ZFree HandShake ISP side **)
 
     let ZFree_HELLO_ISP = (isp_Policy, isp_OptionListLength, isp_OptionList) in 
 
@@ -393,19 +395,62 @@ let processClient(pkCA: bitstring)=
 
 
 
-    (* Step 2 *)
+    (** Step 2 ZFree Connect ISP side  **)
     new HashType: bitstring;
     new ParseType: bitstring;
     new connectionType: bitstring;
-    new Policy2: bitstring;
+
     new AddressListLength: bitstring;
     new AddressList: bitstring;
 
-    let ZFree_CONNECT = (HashType, ParseType, connectionType, Policy2, AddressListLength,  AddressList) in 
+    let ZFree_CONNECT = (HashType, ParseType, connectionType, isp_Policy, AddressListLength,  AddressList) in 
+    
+    (** ISP Connect Out **)
+    (***  ISP Assistant   2----->   Server Agent ***)
     out(c, ZFree_CONNECT);
+    
+    (** ISP Connect ACK input **)
+    (***  ISP Assistant   <-----2   Server Agent ***)
+    in(c, ZFree_ACK: bitstring);
 
 
 
+
+
+
+
+
+
+    (***  Step 4 ZFree DataPlane Interaction ISP side  ***)
+    (*** sniff packet from data plane ***)
+    in(d, ZeroRating_Data1: bitstring);
+    out(d, ZeroRating_Data1);
+
+    in(d, ZeroRating_Data2: bitstring);
+    out(d, ZeroRating_Data2);
+
+
+    in(d, ZeroRating_Data3: bitstring);
+    out(d, ZeroRating_Data3);
+
+
+    in(d, ZeroRating_Data4: bitstring);
+    (d, ZeroRating_Data4);
+
+
+    (***  create Key hash ***)
+    let khash1_ISP = H(ZeroRating_Data1) in
+    let khash2_ISP = H(ZeroRating_Data2) in
+    let khash3_ISP = H(ZeroRating_Data3) in
+    let khash4_ISP = H(ZeroRating_Data4) in
+
+    new HashValueLength: bitstring;
+    let HashValue = (khash1, khash2, khash3, khash4) in
+    new timeStamp: bitstring;
+
+    let Hash_Push = (HashValueLength, HashValue, timeStamp) in
+    (*** ZFree send khash)
+    out(c, Hash_Push);
 
 
 
@@ -459,7 +504,7 @@ let processClient(pkCA: bitstring)=
 
 
 (******************************************************************)
-(* Server process *)
+(* Server Agent process *)
 
 (*** in here, the Server is the Server Agent ***)
 
@@ -673,6 +718,55 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
 
+    (***  Step 2 ZFree Connect Server Agent side  ***)
+    (***  ZFree Connect Input     ***)
+    (***  ISP Assistant   2----->   Server Agent ***)
+    in(c, ZFree_CONNECT: bitstring);
+    let (HashType_sa: bitstring, ParseType_sa: bitstring, connectionType_sa: bitstring, isp_Policy_sa: bitstring, AddressListLength_sa: bitstring, AddressList_sa: bitstring) = ZFree_CONNECT in
+    
+    (*** ZFree Connect ACK in ***)
+    new ZFree_ACK:bitstring;
+    (*** ISP Assistant   <-----2   Server Agent ***)
+    out(c, ZFree_ACK)
+
+
+
+
+
+
+    (***  Step 4 ZFree DataPlane Interaction Server Agent side  ***)
+    (*** sniff packet from data plane ***)
+    in(d, ZeroRating_Data1: bitstring);
+    out(d, ZeroRating_Data1);
+
+    in(d, ZeroRating_Data2: bitstring);
+    out(d, ZeroRating_Data2);
+
+
+    in(d, ZeroRating_Data3: bitstring);
+    out(d, ZeroRating_Data3);
+
+
+    in(d, ZeroRating_Data4: bitstring);
+    (d, ZeroRating_Data4);
+    
+
+    (***  create Key hash ***)
+    let khash1 = H(ZeroRating_Data1) in
+    let khash2 = H(ZeroRating_Data2) in
+    let khash3 = H(ZeroRating_Data3) in
+    let khash4 = H(ZeroRating_Data4) in
+
+    new HashValueLength: bitstring;
+    let HashValue = (khash1, khash2, khash3, khash4) in
+    new timeStamp: bitstring;
+
+    let Hash_Push = (HashValueLength, HashValue, timeStamp) in
+    (*** ZFree send khash)
+    out(c, Hash_Push);
+    
+
+
 
 
 
@@ -724,6 +818,42 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
                   application_server_write_nonce_5, 
                   (AppDataServer, record_type), 
                   empty)). 
+
+
+
+
+    (******************************************************************)
+    (****     CP Server process         ****)
+    (****   non-TLS datapath version    ****)
+
+    (**** note: pay attation to the channel ****)
+
+    (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
+
+
+    let processServer() = 
+
+    (* Step 4 *)
+    new ZeroRating_Data: bitstring;
+    out(d, ZeroRating_Data);
+
+    0.
+
+    (******************************************************************)
+    (******       User Client process      ******)
+    (******    non-TLS datapath version    ******)
+
+    (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
+
+
+
+
+    let processClient() = 
+
+    (* Step 4 *)
+    in(d, ZeroRating_Data: bitstring);
+    
+    0.
 
 
 (******************************************************************)
