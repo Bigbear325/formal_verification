@@ -439,7 +439,7 @@ let processISP(pkCA: bitstring)=
     (*verify event*)
 
 
-0.
+    0.
 
 
     (* Event end: authentication *)
@@ -455,7 +455,7 @@ let processISP(pkCA: bitstring)=
 (*** in here, the Server is the Server Agent ***)
 
 
-let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkCA: bitstring)=
+let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkCA: bitstring) =
     (* Setup *)
       in(c, (server_version: bitstring, server_cipher_suite: bitstring));
 
@@ -636,6 +636,9 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
 
 
+
+
+
     (*** Setup ***)
     in(c, (cp_Policy: bitstring, cp_OptionListLength: bitstring, cp_OptionList: bitstring));
 
@@ -675,8 +678,12 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
 
 
+
+
     (***  Step 4 ZFree DataPlane Interaction Server Agent side  ***)
     (*** sniff packet from data plane ***)
+
+
 
 
     in(d, ZeroRating_Data1: bitstring);
@@ -710,24 +717,19 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
     let Hash_Push = (HashValueLength, HashValue, timeStamp) in
 
      (*** ISP Assistant   <-----3   Server Agent ***)
-    (*** ZFree send khash)
+    (*** ZFree send khash ****)
     out(c, Hash_Push);
     
-
-
+    0.
 
 
 
 
 let processServer() =
     
-   
+    in(c, (ZeroRating_Data1: bitstring, ZeroRating_Data2: bitstring, ZeroRating_Data3: bitstring, ZeroRating_Data4: bitstring));
+
     (* Step 4 *)
-    
-    new ZeroRating_Data1: bitstring;
-    new ZeroRating_Data2: bitstring;
-    new ZeroRating_Data3: bitstring;
-    new ZeroRating_Data4: bitstring;
 
     out(d, ZeroRating_Data1);
     
@@ -742,12 +744,13 @@ let processServer() =
 
     0.
 
+
     (******************************************************************)
     (******       User Client process      ******)
     (******    non-TLS datapath version    ******)
 
-    (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
 
+    (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
 
 let processClient() = 
 
@@ -789,10 +792,11 @@ process
       let signCA_pkS = sign(H((HostInfoCA, HostInfoS, pkS)), skCA) in 
       let server_certificate = (HostInfoCA, HostInfoS, pkS, signCA_pkS) in
       out(c, server_certificate);
+
     ((!processISP(pkCA)) | 
      (!processSA(skS, pkS, server_certificate, pkCA)) | 
-     (!processServer())|
-     (!processClient())|
+     (!processServer()) |
+     (!processClient()) |
      (!processCA(skCA))
     )
 
