@@ -175,7 +175,7 @@ query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring;
 
 (***  Step 0 TLS Setup ***)
 
-let processClient(pkCA: bitstring)=
+let processISP(pkCA: bitstring)=
     (* Setup *)
       in(c, (client_version: bitstring, client_cipher_suites: bitstring, 
              legacy_compression_methods: bitstring));
@@ -455,7 +455,7 @@ let processClient(pkCA: bitstring)=
 (*** in here, the Server is the Server Agent ***)
 
 
-let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkCA: bitstring)=
+let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkCA: bitstring)=
     (* Setup *)
       in(c, (server_version: bitstring, server_cipher_suite: bitstring));
 
@@ -791,9 +791,8 @@ process
       let signCA_pkS = sign(H((HostInfoCA, HostInfoS, pkS)), skCA) in 
       let server_certificate = (HostInfoCA, HostInfoS, pkS, signCA_pkS) in
       out(c, server_certificate);
-    ((!processClient(pkCA)) | 
-     (!processServer(skS, pkS, server_certificate, pkCA)) | 
-
+    ((!processISP(pkCA)) | 
+     (!processSA(skS, pkS, server_certificate, pkCA)) | 
      (!processServer())|
      (!processClient())|
      (!processCA(skCA))
