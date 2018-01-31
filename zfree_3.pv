@@ -1,26 +1,4 @@
-(***************************************************************************
- *                                                                         *
- *  Formal Verification of TLS 1.3 Full Handshake Protocol Using ProVerif  *
- *                                                                         *
- *  Kenichi Arai                                                           *
- *                                                                         *
- *  Copyright (C) Nagasaki University 2015-2016                            *
- *                                                                         *
- ***************************************************************************)
-
 (*
-    This file is free software; you can redistribute it and/or modify 
-    it under the terms of the BSD License.
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the BSD license for more details (in file LICENSEBSD).
-*)
-
-(* 
-The Transport Layer Security (TLS) Protocol Version 1.3 
-    draft-ietf-tls-tls13-11 (January 22, 2016)
-
 ===================================================================================
        Client                                                   Server
 
@@ -435,17 +413,16 @@ let processClient(pkCA: bitstring)=
 
 
     in(d, ZeroRating_Data4: bitstring);
-    (d, ZeroRating_Data4);
+    out(d, ZeroRating_Data4);
 
 
     (***  create Key hash ***)
-    new key: bitstring
 
 
-    let khash1_ISP = HMAC(key, ZeroRating_Data1) in
-    let khash2_ISP = HMAC(key, ZeroRating_Data2) in
-    let khash3_ISP = HMAC(key, ZeroRating_Data3) in
-    let khash4_ISP = HMAC(key, ZeroRating_Data4) in
+    let khash1_ISP = HMAC(client_finished_key, ZeroRating_Data1) in
+    let khash2_ISP = HMAC(client_finished_key, ZeroRating_Data2) in
+    let khash3_ISP = HMAC(client_finished_key, ZeroRating_Data3) in
+    let khash4_ISP = HMAC(client_finished_key, ZeroRating_Data4) in
 
     in(c, Hash_Push: bitstring)
     let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = Hash_Push in
