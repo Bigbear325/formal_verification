@@ -156,8 +156,18 @@ fun inc(bitstring): bitstring.
 
 (******************************************************************)
 (* Queries: secrecy *) 
-free AppDataClient: bitstring [private].
-query attacker(AppDataClient). 
+
+(* 1. the attacker try to get data from dataplane *)
+(* 2. the attacker try to get data from controlplane *)
+
+
+free Hash_Push: bitstring [private].  (* control plane *)
+free ZeroRating_Data1: bitstring.
+free ZeroRating_Data2: bitstring.
+free ZeroRating_Data3: bitstring.
+free ZeroRating_Data4: bitstring.
+query attacker(Hash_Push, ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4). 
+
 
 (* Queries: authentication *) 
 event endClient(bitstring, bitstring, bitstring, bitstring, bitstring).
@@ -165,7 +175,25 @@ event beginClient(bitstring, bitstring, bitstring, bitstring, bitstring).
 query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring; 
   inj-event(endClient(s,t,u,v,w)) ==> inj-event(beginClient(s,t,u,v,w)).
 
-(*integatin *)
+
+
+(* Queries2: verify integrity of response data *)
+event endResponseVerif(bitstring).
+event beginResponseVerif(bitstring).
+
+query response_data: bitstring;
+event(endResponseVerif(response_data)) ==> event(beginResponseVerif(response_data)).
+
+
+(* Queries3: authentication CP server identity *)
+event endServerVerif(bitstring).
+event beginServerVerif(bitstring).
+
+query server_identity: bitstring;
+inj-event(endServerVerif(server_identity)) ==> inj-event(beginServerVerif(server_identity)).
+
+
+
 
 (******************************************************************)
 (* ISP assistant process *)
@@ -339,10 +367,6 @@ let processISP(pkCA: bitstring)=
 
 
 
-
-
-
-
     (** ZFree ISP assistant **)
     (** Setup **)
     in(c, (isp_Policy: bitstring, isp_OptionListLength: bitstring, isp_OptionList: bitstring));
@@ -403,22 +427,16 @@ let processISP(pkCA: bitstring)=
     (***  Step 4 ZFree DataPlane Interaction ISP side  ***)
     (*** sniff packet from data plane ***)
     in(d, ZeroRating_Data1: bitstring);
-    out(d, ZeroRating_Data1);
-
     in(d, ZeroRating_Data2: bitstring);
-    out(d, ZeroRating_Data2);
-
-
     in(d, ZeroRating_Data3: bitstring);
-    out(d, ZeroRating_Data3);
-
-
     in(d, ZeroRating_Data4: bitstring);
-    out(d, ZeroRating_Data4);
+
+
+
+
 
 
     (***  create Key hash ***)
-
 
     let khash1_ISP = HMAC(client_finished_key, ZeroRating_Data1) in
     let khash2_ISP = HMAC(client_finished_key, ZeroRating_Data2) in
@@ -436,9 +454,15 @@ let processISP(pkCA: bitstring)=
     let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = HashValue in
 
     if khash1_ISP= khash1_CP && khash2_ISP= khash2_CP && khash3_ISP= khash3_CP && khash1_ISP= khash1_CP then
-    (*verify event*)
+
+(*verify event*)
 
 
+    (* after ISP check, pass the packets *)
+    out(d, ZeroRating_Data1);
+    out(d, ZeroRating_Data1);
+    out(d, ZeroRating_Data1);
+    out(d, ZeroRating_Data1);
     0.
 
 
@@ -599,7 +623,8 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
 
 
-
+    
+    (*  !!!read this carefully again to make sure no change!!!!!!! *)
     (* Event begin: authentication *)
       event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);
 
@@ -687,21 +712,21 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
 
     in(d, ZeroRating_Data1: bitstring);
-    let khash1 = HMAC(client_finished_key, ZeroRating_Data1) in
+    let khash1 = HMAC(server_finished_key, ZeroRating_Data1) in
     out(d, ZeroRating_Data1);
 
     in(d, ZeroRating_Data2: bitstring);
-    let khash2 = HMAC(client_finished_key, ZeroRating_Data2) in
+    let khash2 = HMAC(server_finished_key, ZeroRating_Data2) in
     out(d, ZeroRating_Data2);
 
 
     in(d, ZeroRating_Data3: bitstring);
-    let khash3 = HMAC(client_finished_key, ZeroRating_Data3) in
+    let khash3 = HMAC(server_finished_key, ZeroRating_Data3) in
     out(d, ZeroRating_Data3);
 
 
     in(d, ZeroRating_Data4: bitstring);
-    let khash4 = HMAC(client_finished_key, ZeroRating_Data4) in
+    let khash4 = HMAC(server_finished_key, ZeroRating_Data4) in
     out(d, ZeroRating_Data4);
     
 
