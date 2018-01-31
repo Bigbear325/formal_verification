@@ -439,22 +439,19 @@ let processClient(pkCA: bitstring)=
 
 
     (***  create Key hash ***)
-    let khash1_ISP = H(ZeroRating_Data1) in
-    let khash2_ISP = H(ZeroRating_Data2) in
-    let khash3_ISP = H(ZeroRating_Data3) in
-    let khash4_ISP = H(ZeroRating_Data4) in
-
-    new HashValueLength: bitstring;
-    let HashValue = (khash1, khash2, khash3, khash4) in
-    new timeStamp: bitstring;
-
-    let Hash_Push = (HashValueLength, HashValue, timeStamp) in
-    (*** ZFree send khash)
-    out(c, Hash_Push);
+    new key: bitstring
 
 
+    let khash1_ISP = HMAC(key, ZeroRating_Data1) in
+    let khash2_ISP = HMAC(key, ZeroRating_Data2) in
+    let khash3_ISP = HMAC(key, ZeroRating_Data3) in
+    let khash4_ISP = HMAC(key, ZeroRating_Data4) in
 
+    in(c, Hash_Push: bitstring)
+    let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = Hash_Push in
 
+    if khash1_ISP= khash1_CP && khash2_ISP= khash2_CP && khash3_ISP= khash3_CP && khash1_ISP= khash1_CP then
+    (*verify event*)
 
 
 
@@ -752,10 +749,15 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     
 
     (***  create Key hash ***)
-    let khash1 = H(ZeroRating_Data1) in
-    let khash2 = H(ZeroRating_Data2) in
-    let khash3 = H(ZeroRating_Data3) in
-    let khash4 = H(ZeroRating_Data4) in
+    new key: bitstring
+
+
+    let khash1 = HMAC(key, ZeroRating_Data1) in
+    let khash2 = HMAC(key, ZeroRating_Data2) in
+    let khash3 = HMAC(key, ZeroRating_Data3) in
+    let khash4 = HMAC(key, ZeroRating_Data4) in
+
+    
 
     new HashValueLength: bitstring;
     let HashValue = (khash1, khash2, khash3, khash4) in
@@ -834,8 +836,14 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     let processServer() = 
 
     (* Step 4 *)
-    new ZeroRating_Data: bitstring;
-    out(d, ZeroRating_Data);
+    new ZeroRating_Data1: bitstring;
+    new ZeroRating_Data2: bitstring;
+    new ZeroRating_Data3: bitstring;
+    new ZeroRating_Data4: bitstring;
+    out(d, ZeroRating_Data1);
+    out(d, ZeroRating_Data2);
+    out(d, ZeroRating_Data3);
+    out(d, ZeroRating_Data4);
 
     0.
 
@@ -846,12 +854,14 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
 
 
-
-
     let processClient() = 
 
     (* Step 4 *)
-    in(d, ZeroRating_Data: bitstring);
+    in(d, ZeroRating_Data1: bitstring);
+    in(d, ZeroRating_Data2: bitstring);
+    in(d, ZeroRating_Data3: bitstring);
+    in(d, ZeroRating_Data4: bitstring);
+
     
     0.
 
@@ -868,7 +878,7 @@ let processCA(skCA: bitstring) =
       let X_certificate = (HostInfoCA, HostInfoX, pkX, signCA_pkX) in
       out(c, X_certificate).
 
-
+0.
 (******************************************************************)
 (* Main process *)
 
@@ -886,6 +896,9 @@ process
       out(c, server_certificate);
     ((!processClient(pkCA)) | 
      (!processServer(skS, pkS, server_certificate, pkCA)) | 
+
+     (!processServer())
+     (!processClient())
      (!processCA(skCA))
     )
 
