@@ -687,21 +687,21 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
     in(d, ZeroRating_Data1: bitstring);
-    let khash1 = HMAC(key, ZeroRating_Data1) in
+    let khash1 = HMAC(client_finished_key, ZeroRating_Data1) in
     out(d, ZeroRating_Data1);
 
     in(d, ZeroRating_Data2: bitstring);
-    let khash2 = HMAC(key, ZeroRating_Data2) in
+    let khash2 = HMAC(client_finished_key, ZeroRating_Data2) in
     out(d, ZeroRating_Data2);
 
 
     in(d, ZeroRating_Data3: bitstring);
-    let khash3 = HMAC(key, ZeroRating_Data3) in
+    let khash3 = HMAC(client_finished_key, ZeroRating_Data3) in
     out(d, ZeroRating_Data3);
 
 
     in(d, ZeroRating_Data4: bitstring);
-    let khash4 = HMAC(key, ZeroRating_Data4) in
+    let khash4 = HMAC(client_finished_key, ZeroRating_Data4) in
     out(d, ZeroRating_Data4);
     
 
