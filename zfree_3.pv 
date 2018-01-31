@@ -456,7 +456,7 @@ let processClient(pkCA: bitstring)=
 
 
 
-
+(***************************************
     (* Event end: authentication *)
       event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0); 
 
@@ -498,7 +498,7 @@ let processClient(pkCA: bitstring)=
                   application_client_write_nonce_1, 
                   (AppDataClient, record_type), 
                   empty)). 
-
+*******************************************)
 
 (******************************************************************)
 (* Server Agent process *)
@@ -774,7 +774,7 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
 
-
+(*******************************************
 
     (* Application traffic keys: client_write_key, server_write_key, 
                                  client_write_iv, server_write_iv *)
@@ -808,9 +808,6 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
 
-
-
-
     (* Application Data *) 
       let application_server_write_nonce_5 = xor(application_server_write_iv, 
                                                  inc(inc(inc(inc(inc(server_seq_num)))))) in 
@@ -821,7 +818,7 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
                   (AppDataServer, record_type), 
                   empty)). 
 
-
+*******************************************)
 
 
     (******************************************************************)
