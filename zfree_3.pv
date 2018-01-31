@@ -165,6 +165,7 @@ event beginClient(bitstring, bitstring, bitstring, bitstring, bitstring).
 query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring; 
   inj-event(endClient(s,t,u,v,w)) ==> inj-event(beginClient(s,t,u,v,w)).
 
+(*integatin *)
 
 (******************************************************************)
 (* ISP assistant process *)
@@ -424,58 +425,29 @@ let processClient(pkCA: bitstring)=
     let khash3_ISP = HMAC(client_finished_key, ZeroRating_Data3) in
     let khash4_ISP = HMAC(client_finished_key, ZeroRating_Data4) in
 
-    in(c, Hash_Push: bitstring)
-    let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = Hash_Push in
+
+    (*  show the hash compare *)
+    in(c, Hash_Push: bitstring);
+
+
+    let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring) = Hash_Push in
+    
+
+    let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = HashValue in
 
     if khash1_ISP= khash1_CP && khash2_ISP= khash2_CP && khash3_ISP= khash3_CP && khash1_ISP= khash1_CP then
     (*verify event*)
 
 
+0.
 
 
-(***************************************
     (* Event end: authentication *)
-      event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0); 
+
 
     (* Application data traffic keys: client_write_key, server_write_key, 
                                       client_write_iv, server_write_iv *)
-      let application_handshake_context = H((client_hello, server_hello, encrypted_extensions,
-                                             server_configuration, server_certificate, 
-                                             server_certificate_verify, server_finished)) in
-
-      let application_client_write_key = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_KEY), 
-                application_handshake_context), 
-	      hkdf_length_application_client_write_key) in
-
-      let application_server_write_key = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_KEY), 
-                application_handshake_context), 
-	      hkdf_length_application_server_write_key) in
-
-      let application_client_write_iv = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_IV), 
-                application_handshake_context), 
-	      hkdf_length_application_client_write_IV) in
-
-      let application_server_write_iv = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_IV), 
-                application_handshake_context), 
-	      hkdf_length_application_server_write_IV) in
-
-    (* Application Data *) (* Secrecy *)
-      let application_client_write_nonce_1 = xor(application_client_write_iv, 
-                                                 inc(client_seq_num)) in 
-      out(c, AEAD_Encrypt(
-                  application_client_write_key, 
-                  application_client_write_nonce_1, 
-                  (AppDataClient, record_type), 
-                  empty)). 
-*******************************************)
+      
 
 (******************************************************************)
 (* Server Agent process *)
@@ -701,7 +673,7 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     (*** ZFree Connect ACK in ***)
     new ZFree_ACK:bitstring;
     (*** ISP Assistant   <-----2   Server Agent ***)
-    out(c, ZFree_ACK)
+    out(c, ZFree_ACK);
 
 
 
@@ -710,29 +682,31 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
     (***  Step 4 ZFree DataPlane Interaction Server Agent side  ***)
     (*** sniff packet from data plane ***)
+
+
+
+
     in(d, ZeroRating_Data1: bitstring);
+    let khash1 = HMAC(key, ZeroRating_Data1) in
     out(d, ZeroRating_Data1);
 
     in(d, ZeroRating_Data2: bitstring);
+    let khash2 = HMAC(key, ZeroRating_Data2) in
     out(d, ZeroRating_Data2);
 
 
     in(d, ZeroRating_Data3: bitstring);
+    let khash3 = HMAC(key, ZeroRating_Data3) in
     out(d, ZeroRating_Data3);
 
 
     in(d, ZeroRating_Data4: bitstring);
-    (d, ZeroRating_Data4);
+    let khash4 = HMAC(key, ZeroRating_Data4) in
+    out(d, ZeroRating_Data4);
     
 
     (***  create Key hash ***)
-    new key: bitstring
-
-
-    let khash1 = HMAC(key, ZeroRating_Data1) in
-    let khash2 = HMAC(key, ZeroRating_Data2) in
-    let khash3 = HMAC(key, ZeroRating_Data3) in
-    let khash4 = HMAC(key, ZeroRating_Data4) in
+    new key: bitstring;
 
     
 
@@ -741,6 +715,8 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     new timeStamp: bitstring;
 
     let Hash_Push = (HashValueLength, HashValue, timeStamp) in
+
+     (*** ISP Assistant   <-----3   Server Agent ***)
     (*** ZFree send khash)
     out(c, Hash_Push);
     
@@ -751,52 +727,14 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
 
 
 
-(*******************************************
+(*******************************************)
 
     (* Application traffic keys: client_write_key, server_write_key, 
                                  client_write_iv, server_write_iv *)
-      let application_handshake_context = H((client_hello, server_hello, encrypted_extensions,
-                                             server_configuration, server_certificate, 
-                                             server_certificate_verify, server_finished)) in
-
-      let application_client_write_key = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_KEY), 
-                application_handshake_context), 
-	      hkdf_length_application_client_write_key) in
-
-      let application_server_write_key = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_KEY), 
-                application_handshake_context), 
-	      hkdf_length_application_server_write_key) in
-
-      let application_client_write_iv = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_CLIENT_WRITE_IV), 
-                application_handshake_context), 
-	      hkdf_length_application_client_write_IV) in
-
-      let application_server_write_iv = HKDF_Expand(
-      	      traffic_secret_0, 
-	      ((HKDF_LABEL_APPLICATION_DATA_KEY_EXPANSION, HKDF_LABEL_SERVER_WRITE_IV), 
-                application_handshake_context), 
-	      hkdf_length_application_server_write_IV) in
-
+      
 
 
     (* Application Data *) 
-      let application_server_write_nonce_5 = xor(application_server_write_iv, 
-                                                 inc(inc(inc(inc(inc(server_seq_num)))))) in 
-      new AppDataServer: bitstring;
-      out(c, AEAD_Encrypt(
-                  application_server_write_key, 
-                  application_server_write_nonce_5, 
-                  (AppDataServer, record_type), 
-                  empty)). 
-
-*******************************************)
-
 
     (******************************************************************)
     (****     CP Server process         ****)
@@ -807,16 +745,19 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
 
 
-    let processServer() = 
+let processServer() =
 
     (* Step 4 *)
-    new ZeroRating_Data1: bitstring;
+    new ZeroRating_Data1_k: bitstring;
+    out(d, ZeroRating_Data1_k);
+    
     new ZeroRating_Data2: bitstring;
-    new ZeroRating_Data3: bitstring;
-    new ZeroRating_Data4: bitstring;
-    out(d, ZeroRating_Data1);
     out(d, ZeroRating_Data2);
+    
+    new ZeroRating_Data3: bitstring;
     out(d, ZeroRating_Data3);
+    
+    new ZeroRating_Data4: bitstring;
     out(d, ZeroRating_Data4);
 
     0.
@@ -828,7 +769,7 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
     (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
 
 
-    let processClient() = 
+let processClient() = 
 
     (* Step 4 *)
     in(d, ZeroRating_Data1: bitstring);
