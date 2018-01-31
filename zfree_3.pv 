@@ -358,10 +358,16 @@ let processClient(pkCA: bitstring)=
 
 
 
-    (***  Step 1 ZFree HandShake ***)
-    new isp_Policy: bitstring;
-    new isp_OptionListLength: bitstring;
-    new isp_OptionList: bitstring;
+
+
+
+
+    (** ZFree ISP assistant **)
+    (** Setup **)
+    in(c, (isp_Policy: bitstring, isp_OptionListLength: bitstring, isp_OptionList: bitstring));
+
+
+    (**  Step 1 ZFree HandShake **)
 
     let ZFree_HELLO_ISP = (isp_Policy, isp_OptionListLength, isp_OptionList) in 
 
@@ -375,12 +381,17 @@ let processClient(pkCA: bitstring)=
     in(c, ZFree_HELLO_Server_Agent: bitstring);
     
 
-    let (cp_Policy, cp_OptionListLength, cp_OptionList) = ZFree_HELLO_Server_Agent in
+    let (cp_Policy: bitstring, cp_OptionListLength: bitstring, cp_OptionList: bitstring) = ZFree_HELLO_Server_Agent in
 
-    (**      check version match           **)
+    (**      check Policy version match           **)
     if isp_Policy = cp_Policy &&
         isp_OptionListLength = cp_OptionListLength &&
         isp_OptionList = cp_OptionList then
+
+
+
+
+
 
     (* Step 2 *)
     new HashType: bitstring;
@@ -627,9 +638,38 @@ let processServer(skS: bitstring, pkS: bitstring, server_certificate: bitstring,
       if client_finished = HMAC(client_finished_key, client_finished_handshake_context) then
 
 
+
+
+
     (*** Above is to get the correct HMAC ***)
 
+
+
+
+
+
+    (*** Setup ***)
+    in(c, (cp_Policy: bitstring, cp_OptionListLength: bitstring, cp_OptionList: bitstring));
+
     (*** Step 1 ZFree HandSake Server Agent side ***)
+
+    (***  ZFree_Hello input ***)
+    (*** ISP Assistant   1----->   Server Agent ***)
+    in(c, ZFree_HELLO_ISP: bitstring);
+    
+    let (isp_Policy: bitstring, isp_OptionListLength: bitstring, isp_OptionList: bitstring) = ZFree_HELLO_ISP in
+    
+    (***      check version match              ***)
+    if cp_Policy = isp_Policy &&
+            cp_OptionListLength = isp_OptionListLength &&
+            cp_OptionList = isp_OptionList then
+
+    let ZFree_HELLO_Server_Agent = (cp_Policy, cp_OptionListLength, cp_OptionList) in
+
+    (*** ZFree_Hello output ***)
+    (*** ISP Assistant   <-----1   Server Agent ***)
+    out(c, ZFree_HELLO_Server_Agent);
+
 
 
 
