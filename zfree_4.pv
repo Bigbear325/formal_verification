@@ -196,7 +196,7 @@ event endintegrityVerif_c(bitstring).
 event begintegrityVerif_c(bitstring).
 
 query response_data: bitstring;
-event(endResponseVerif_c(response_data)) ==> event(beginResponseVerif_c(response_data)).
+event(endintegrityVerif_c(response_data)) ==> event(begintegrityVerif_c(response_data)).
 
 
 (* Queries3.2: verify integrity of the data Plane (Packet datapath). e.g. client  <--data-- CP server *)
@@ -470,7 +470,7 @@ let processISP(pkCA: bitstring)=
     
 
 (*query 3.1 verification the cp integrity——*)
-    event endintegrityVerif_c(Hash_Push);
+    event endintegrityVerif_c(HashValueLength);
 
 
 
@@ -769,7 +769,7 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
         
 
     (*query 3.1 verification the cp integrity——*)
-    event begintegrityVerif_c(Hash_Push);
+    event begintegrityVerif_c(HashValueLength);
 
 
 
