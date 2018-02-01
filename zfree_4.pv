@@ -166,32 +166,45 @@ free ZeroRating_Data1: bitstring.
 free ZeroRating_Data2: bitstring.
 free ZeroRating_Data3: bitstring.
 free ZeroRating_Data4: bitstring.
-query attacker(Hash_Push, ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4). 
-
-
-(* Queries: authentication *) 
-event endClient(bitstring, bitstring, bitstring, bitstring, bitstring).
-event beginClient(bitstring, bitstring, bitstring, bitstring, bitstring).
-query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring; 
-  inj-event(endClient(s,t,u,v,w)) ==> inj-event(beginClient(s,t,u,v,w)).
+query attacker(Hash_Push). 
 
 
 
-(* Queries2: verify integrity of response data *)
-event endResponseVerif(bitstring).
-event beginResponseVerif(bitstring).
-
-query response_data: bitstring;
-event(endResponseVerif(response_data)) ==> event(beginResponseVerif(response_data)).
 
 
-(* Queries3: authentication CP server identity *)
+(* Queries2.1: authentication CP server identity *)
 event endServerVerif(bitstring).
 event beginServerVerif(bitstring).
 
 query server_identity: bitstring;
 inj-event(endServerVerif(server_identity)) ==> inj-event(beginServerVerif(server_identity)).
 
+
+(* Queries2.2: authentication: verify the SA and the ISP assistant *) 
+event endClient(bitstring, bitstring, bitstring, bitstring, bitstring).
+event beginClient(bitstring, bitstring, bitstring, bitstring, bitstring).
+query s: bitstring, t: bitstring, u: bitstring, v: bitstring, w: bitstring; 
+inj-event(endClient(s,t,u,v,w)) ==> inj-event(beginClient(s,t,u,v,w)).
+
+
+
+
+
+
+(* Queries3.1: verify integrity of the Control Plane (ZFree command). e.g. ISP Assistant  <--hashpush-- SA *)
+event endintegrityVerif_c(bitstring).
+event begintegrityVerif_c(bitstring).
+
+query response_data: bitstring;
+event(endResponseVerif_c(response_data)) ==> event(beginResponseVerif_c(response_data)).
+
+
+(* Queries3.2: verify integrity of the data Plane (Packet datapath). e.g. client  <--data-- CP server *)
+event endResponseVerif_d(bitstring,bitstring,bitstring,bitstring).
+event beginResponseVerif_d(bitstring,bitstring,bitstring,bitstring).
+
+query response_data1: bitstring, response_data2: bitstring, response_data3: bitstring, response_data4: bitstring;
+event(endResponseVerif_d(response_data1, response_data2, response_data3, response_data4)) ==> event(beginResponseVerif_d(response_data1, response_data2, response_data3, response_data4)).
 
 
 
@@ -447,15 +460,25 @@ let processISP(pkCA: bitstring)=
     (*  show the hash compare *)
     in(c, Hash_Push: bitstring);
 
+    (* quary ISP side 2.1 Event end: authentication *)(*Update: check if need to add more parameter*)
+    event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0);
+
+
+
 
     let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring) = Hash_Push in
     
+
+(*query 3.1 verification the cp integrity——*)
+    event endintegrityVerif_c(Hash_Push);
+
+
 
     let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = HashValue in
 
     if khash1_ISP= khash1_CP && khash2_ISP= khash2_CP && khash3_ISP= khash3_CP && khash1_ISP= khash1_CP then
 
-(*verify event*)
+    (*verify event -- update: no need*)
 
 
     (* after ISP check, pass the packets *)
@@ -466,7 +489,6 @@ let processISP(pkCA: bitstring)=
     0.
 
 
-    (* Event end: authentication *)
 
 
     (* Application data traffic keys: client_write_key, server_write_key, 
@@ -621,13 +643,13 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 	      (server_finished, record_type), 
 	      empty) in 
 
-
-
     
-    (*  !!!read this carefully again to make sure no change!!!!!!! *)
-    (* Event begin: authentication *)
+    
+    (* quary SA side 2.1 Event begin: authentication   2.1 SA side *)
       event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);
 
+
+(*  !!!read this carefully again to make sure no change!!!!!!! *)
     (* Server output *)
       out(c, (server_hello, enc_encrypted_extensions, enc_server_configuration, 
               enc_server_certificate, enc_server_certificate_verify, enc_server_finished));
@@ -744,7 +766,13 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
      (*** ISP Assistant   <-----3   Server Agent ***)
     (*** ZFree send khash ****)
     out(c, Hash_Push);
-    
+        
+
+    (*query 3.1 verification the cp integrity——*)
+    event begintegrityVerif_c(Hash_Push);
+
+
+
     0.
 
 
@@ -767,6 +795,9 @@ let processServer() =
 
     out(d, ZeroRating_Data4);
 
+    (* 3.2 DataPath Integrity CP server side  *)
+    event beginResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
+
     0.
 
 
@@ -784,6 +815,9 @@ let processClient() =
     in(d, ZeroRating_Data2: bitstring);
     in(d, ZeroRating_Data3: bitstring);
     in(d, ZeroRating_Data4: bitstring);
+
+    (* 3.2 DataPath Integrity client side  *)
+    event endResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
 
     
     0.
