@@ -207,6 +207,11 @@ query response_data1: bitstring, response_data2: bitstring, response_data3: bits
 event(endResponseVerif_d(response_data1, response_data2, response_data3, response_data4)) ==> event(beginResponseVerif_d(response_data1, response_data2, response_data3, response_data4)).
 
 
+event endResponseVerif_h(bitstring).
+event beginResponseVerif_h(bitstring).
+
+query keyedhash: bitstring;
+event(endResponseVerif_h(keyedhash)) ==> event(beginResponseVerif_h(keyedhash)).
 
 (******************************************************************)
 (* ISP assistant process *)
@@ -461,16 +466,18 @@ let processISP(pkCA: bitstring)=
     in(c, Hash_Push_otherside: bitstring);
 
     (* quary ISP side 2.1 Event end: authentication *)(*Update: check if need to add more parameter*)
-    event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0);
+    (*event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0);*)
 
 
 
 
-    let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring) = Hash_Push_otherside in
+let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring, packet_hash: bitstring) = Hash_Push_otherside in
     
-
-
-
+    let ISP_value = (khash1_ISP, khash2_ISP, khash3_ISP, khash4_ISP) in
+    
+    let ISP_p_hash = HMAC(client_finished_key, ISP_value) in
+    
+    let ISP_context = (ISP_value, ISP_p_hash) in
 
     let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = HashValue in
 
@@ -479,9 +486,11 @@ let processISP(pkCA: bitstring)=
     (*verify event*)
 
 (*query 3.1 verification the cp integrity——*)
-event endintegrityVerif_c(ZeroRating_Data1_c);
-event endintegrityVerif_c(khash1_ISP);
-event endintegrityVerif_c(HashValue);
+(*event endintegrityVerif_c(ZeroRating_Data1_c);*)
+(*event endintegrityVerif_c(khash1_ISP);*)
+(*event endintegrityVerif_c(HashValue);*)
+
+    event endResponseVerif_h(ISP_context);
 
 
     (* after ISP check, pass the packets *)
@@ -649,7 +658,7 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
     
     
     (* quary SA side 2.1 Event begin: authentication   2.1 SA side *)
-      event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);
+      (*event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);  *)
 
 
 (*  !!!read this carefully again to make sure no change!!!!!!! *)
@@ -764,7 +773,11 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
     let HashValue = (khash1, khash2, khash3, khash4) in
     new timeStamp: bitstring;
 
-    let Hash_Push = (HashValueLength, HashValue, timeStamp) in
+    let packet_hash = HMAC(server_finished_key, HashValue) in
+    
+    let packet_context = (HashValue,packet_hash) in
+
+    let Hash_Push = (HashValueLength, HashValue, timeStamp, packet_hash) in
 
      (*** ISP Assistant   <-----3   Server Agent ***)
     (*** ZFree send khash ****)
@@ -773,9 +786,11 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
     (*query 3.1 verification the cp integrity*)
 
-    event begintegrityVerif_c(ZeroRating_Data1_c);
-    event begintegrityVerif_c(khash1);
-    event begintegrityVerif_c(HashValue);
+    (*event begintegrityVerif_c(ZeroRating_Data1_c);*)
+    (*event begintegrityVerif_c(khash1);*)
+    (*event begintegrityVerif_c(HashValue);*)
+
+    event beginResponseVerif_h(packet_context);
 
     0.
 
@@ -800,7 +815,7 @@ let processServer() =
     out(d, ZeroRating_Data4);
 
     (* 3.2 DataPath Integrity CP server side  *)
-    event beginResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
+    (*event beginResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);*)
 
     0.
 
@@ -821,7 +836,7 @@ let processClient() =
     in(d, ZeroRating_Data4: bitstring);
 
     (* 3.2 DataPath Integrity client side  *)
-    event endResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
+    (*event endResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);*)
 
     
     0.
