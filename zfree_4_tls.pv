@@ -70,8 +70,6 @@ free HostInfoC_c, HostInfoS_c, HostInfoCA_c: bitstring.
 
 (******************************************************************)
 
-free c: channel.
-
 (* Null, Empty: const. *)
 const null: bitstring [data].
 const empty: bitstring [data].
@@ -812,7 +810,8 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate_c: bitstring, p
     0.
 
 
-
+(******************************************************************)
+(******       CP Server process      ******)
 
 let processServer() =
     
@@ -837,9 +836,45 @@ let processServer() =
     0.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     (******************************************************************)
     (******       User Client process      ******)
-    (******    non-TLS datapath version    ******)
 
 
     (****  Client <----d ISP assistant  <----d  Server Agent  <----d CP Server   ****)
@@ -857,6 +892,40 @@ let processClient() =
 
     
     0.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (******************************************************************)
