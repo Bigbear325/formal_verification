@@ -1,0 +1,262 @@
+File "zfree_4fail.pv", line 442, character 11 - line 442, character 27:
+Warning: identifier ZeroRating_Data1 rebound
+File "zfree_4fail.pv", line 443, character 11 - line 443, character 27:
+Warning: identifier ZeroRating_Data2 rebound
+File "zfree_4fail.pv", line 444, character 11 - line 444, character 27:
+Warning: identifier ZeroRating_Data3 rebound
+File "zfree_4fail.pv", line 445, character 11 - line 445, character 27:
+Warning: identifier ZeroRating_Data4 rebound
+File "zfree_4fail.pv", line 461, character 11 - line 461, character 20:
+Warning: identifier Hash_Push rebound
+File "zfree_4fail.pv", line 736, character 11 - line 736, character 27:
+Warning: identifier ZeroRating_Data1 rebound
+File "zfree_4fail.pv", line 740, character 11 - line 740, character 27:
+Warning: identifier ZeroRating_Data2 rebound
+File "zfree_4fail.pv", line 745, character 11 - line 745, character 27:
+Warning: identifier ZeroRating_Data3 rebound
+File "zfree_4fail.pv", line 750, character 11 - line 750, character 27:
+Warning: identifier ZeroRating_Data4 rebound
+File "zfree_4fail.pv", line 764, character 9 - line 764, character 18:
+Warning: identifier Hash_Push rebound
+File "zfree_4fail.pv", line 783, character 12 - line 783, character 28:
+Warning: identifier ZeroRating_Data1 rebound
+File "zfree_4fail.pv", line 783, character 41 - line 783, character 57:
+Warning: identifier ZeroRating_Data2 rebound
+File "zfree_4fail.pv", line 783, character 70 - line 783, character 86:
+Warning: identifier ZeroRating_Data3 rebound
+File "zfree_4fail.pv", line 783, character 99 - line 783, character 115:
+Warning: identifier ZeroRating_Data4 rebound
+File "zfree_4fail.pv", line 814, character 11 - line 814, character 27:
+Warning: identifier ZeroRating_Data1 rebound
+File "zfree_4fail.pv", line 815, character 11 - line 815, character 27:
+Warning: identifier ZeroRating_Data2 rebound
+File "zfree_4fail.pv", line 816, character 11 - line 816, character 27:
+Warning: identifier ZeroRating_Data3 rebound
+File "zfree_4fail.pv", line 817, character 11 - line 817, character 27:
+Warning: identifier ZeroRating_Data4 rebound
+Linear part:
+exp(exp(g,x_37),y) = exp(exp(g,y),x_37)
+Completing equations...
+Completed equations:
+exp(exp(g,x_37),y) = exp(exp(g,y),x_37)
+Convergent part:
+xor(xor(x_38,y_39),y_39) = x_38
+xor(x_40,x_40) = zeros
+xor(zeros,x_41) = x_41
+xor(x_42,zeros) = x_42
+Completing equations...
+Completed equations:
+xor(x_42,zeros) = x_42
+xor(zeros,x_41) = x_41
+xor(x_40,x_40) = zeros
+xor(xor(x_38,y_39),y_39) = x_38
+Process:
+{1}new skCA: bitstring;
+{2}let pkCA: bitstring = pk(skCA) in
+{3}out(c, pkCA);
+{4}new skS: bitstring;
+{5}let pkS: bitstring = pk(skS) in
+{6}let signCA_pkS: bitstring = sign(H((HostInfoCA,HostInfoS,pkS)),skCA) in
+{7}let server_certificate: bitstring = (HostInfoCA,HostInfoS,pkS,signCA_pkS) in
+{8}out(c, server_certificate);
+(
+    {9}!
+    {10}in(c, (client_version: bitstring,client_cipher_suites: bitstring,legacy_compression_methods: bitstring));
+    {11}new client_random: bitstring;
+    {12}new client_legacy_session_id: bitstring;
+    {13}new X: bitstring;
+    {14}let client_key_shares: bitstring = exp(g,X) in
+    {15}let client_hello: bitstring = (client_version,client_random,client_legacy_session_id,client_cipher_suites,legacy_compression_methods,client_key_shares) in
+    {16}out(c, client_hello);
+    {17}in(c, (server_hello: bitstring,enc_encrypted_extensions: bitstring,enc_server_configuration: bitstring,enc_server_certificate: bitstring,enc_server_certificate_verify: bitstring,enc_server_finished: bitstring));
+    {18}let (server_version: bitstring,server_random: bitstring,server_cipher_suite: bitstring,server_key_share: bitstring) = server_hello in
+    {19}if ((server_version = client_version) && (server_cipher_suite = client_cipher_suites)) then
+    {20}let static_secret: bitstring = exp(server_key_share,X) in
+    {21}let ephemeral_secret: bitstring = exp(server_key_share,X) in
+    {22}let xss: bitstring = HKDF_Extract(hkdf_zeros,static_secret) in
+    {23}let xes: bitstring = HKDF_Extract(hkdf_zeros,ephemeral_secret) in
+    {24}let handshake_context: bitstring = H((client_hello,server_hello)) in
+    {25}let handshake_client_write_key: bitstring = HKDF_Expand(xes,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_CLIENT_WRITE_KEY),handshake_context),hkdf_length_handshake_client_write_key) in
+    {26}let handshake_server_write_key: bitstring = HKDF_Expand(xes,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_SERVER_WRITE_KEY),handshake_context),hkdf_length_handshake_server_write_key) in
+    {27}let handshake_client_write_iv: bitstring = HKDF_Expand(xes,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_CLIENT_WRITE_IV),handshake_context),hkdf_length_handshake_client_write_IV) in
+    {28}let handshake_server_write_iv: bitstring = HKDF_Expand(xes,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_SERVER_WRITE_IV),handshake_context),hkdf_length_handshake_server_write_IV) in
+    {29}let handshake_server_write_nonce_0: bitstring = xor(handshake_server_write_iv,server_seq_num) in
+    {30}let (encrypted_extensions: bitstring,=record_type) = AEAD_Decrypt(handshake_server_write_key,handshake_server_write_nonce_0,enc_encrypted_extensions,empty) in
+    {31}let handshake_server_write_nonce_1_236: bitstring = xor(handshake_server_write_iv,inc(server_seq_num)) in
+    {32}let (server_configuration: bitstring,=record_type) = AEAD_Decrypt(handshake_server_write_key,handshake_server_write_nonce_1_236,enc_server_configuration,empty) in
+    {33}let handshake_server_write_nonce_2_237: bitstring = xor(handshake_server_write_iv,inc(inc(server_seq_num))) in
+    {34}let (server_certificate_238: bitstring,=record_type) = AEAD_Decrypt(handshake_server_write_key,handshake_server_write_nonce_2_237,enc_server_certificate,empty) in
+    {35}let handshake_server_write_nonce_3_239: bitstring = xor(handshake_server_write_iv,inc(inc(inc(server_seq_num)))) in
+    {36}let (server_certificate_verify: bitstring,=record_type) = AEAD_Decrypt(handshake_server_write_key,handshake_server_write_nonce_3_239,enc_server_certificate_verify,empty) in
+    {37}let handshake_server_write_nonce_4_240: bitstring = xor(handshake_server_write_iv,inc(inc(inc(inc(server_seq_num))))) in
+    {38}let (server_finished: bitstring,=record_type) = AEAD_Decrypt(handshake_server_write_key,handshake_server_write_nonce_4_240,enc_server_finished,empty) in
+    {39}if (encrypted_extensions = empty) then
+    {40}let (=HostInfoCA,=HostInfoS,pkS_241: bitstring,signCA_pkS_242: bitstring) = server_certificate_238 in
+    {41}if (verify(signCA_pkS_242,H((HostInfoCA,HostInfoS,pkS_241)),pkCA) = true) then
+    {42}let handshake_hashed_data: bitstring = H((client_hello,server_hello,encrypted_extensions,server_configuration,server_certificate_238)) in
+    {43}if (verify(server_certificate_verify,handshake_hashed_data,pkS_241) = true) then
+    {44}let handshake_hash: bitstring = H((client_hello,server_hello,encrypted_extensions,server_configuration,server_certificate_238,server_certificate_verify)) in
+    {45}let mss: bitstring = HKDF_Expand(xss,(HKDF_LABAL_EXPANDED_STATIC_SECRET,handshake_hash),hkdf_length_mss) in
+    {46}let mes: bitstring = HKDF_Expand(xes,(HKDF_LABEL_EXPANDED_EPHEMERAL_SECRET,handshake_hash),hkdf_length_mes) in
+    {47}let master_secret: bitstring = HKDF_Extract(mss,mes) in
+    {48}let traffic_secret_0: bitstring = HKDF_Expand(master_secret,(HKDF_LABEL_TRAFFIC_SECRET,handshake_hash),hkdf_length_traffic_secret) in
+    {49}let server_finished_handshake_context: bitstring = H((client_hello,server_hello,encrypted_extensions,server_configuration,server_certificate_238,server_certificate_verify)) in
+    {50}let server_finished_key: bitstring = HKDF_Expand(master_secret,(HKDF_SERVER_FINISHED,empty),hkdf_length_server_finished_key) in
+    {51}if (server_finished = HMAC(server_finished_key,server_finished_handshake_context)) then
+    {52}let client_finished_handshake_context: bitstring = H((client_hello,server_hello,encrypted_extensions,server_configuration,server_certificate_238,server_certificate_verify,server_finished)) in
+    {53}let client_finished_key: bitstring = HKDF_Expand(master_secret,(HKDF_CLIENT_FINISHED,empty),hkdf_length_client_finished_key) in
+    {54}let client_finished: bitstring = HMAC(client_finished_key,client_finished_handshake_context) in
+    {55}let handshake_client_write_nonce_0: bitstring = xor(handshake_client_write_iv,client_seq_num) in
+    {56}let enc_client_finished: bitstring = AEAD_Encrypt(handshake_client_write_key,handshake_client_write_nonce_0,(client_finished,record_type),empty) in
+    {57}out(c, enc_client_finished);
+    {58}in(c, (isp_Policy: bitstring,isp_OptionListLength: bitstring,isp_OptionList: bitstring));
+    {59}let ZFree_HELLO_ISP: bitstring = (isp_Policy,isp_OptionListLength,isp_OptionList) in
+    {60}out(c, ZFree_HELLO_ISP);
+    {61}in(c, ZFree_HELLO_Server_Agent: bitstring);
+    {62}let (cp_Policy: bitstring,cp_OptionListLength: bitstring,cp_OptionList: bitstring) = ZFree_HELLO_Server_Agent in
+    {63}if ((isp_Policy = cp_Policy) && ((isp_OptionListLength = cp_OptionListLength) && (isp_OptionList = cp_OptionList))) then
+    {64}new HashType: bitstring;
+    {65}new ParseType: bitstring;
+    {66}new connectionType: bitstring;
+    {67}new AddressListLength: bitstring;
+    {68}new AddressList: bitstring;
+    {69}let ZFree_CONNECT: bitstring = (HashType,ParseType,connectionType,isp_Policy,AddressListLength,AddressList) in
+    {70}out(c, ZFree_CONNECT);
+    {71}in(c, ZFree_ACK: bitstring);
+    {72}in(d, ZeroRating_Data1_243: bitstring);
+    {73}in(d, ZeroRating_Data2_244: bitstring);
+    {74}in(d, ZeroRating_Data3_245: bitstring);
+    {75}in(d, ZeroRating_Data4_246: bitstring);
+    {76}let khash1_ISP: bitstring = HMAC(client_finished_key,ZeroRating_Data1_243) in
+    {77}let khash2_ISP: bitstring = HMAC(client_finished_key,ZeroRating_Data2_244) in
+    {78}let khash3_ISP: bitstring = HMAC(client_finished_key,ZeroRating_Data3_245) in
+    {79}let khash4_ISP: bitstring = HMAC(client_finished_key,ZeroRating_Data4_246) in
+    {80}in(c, Hash_Push_247: bitstring);
+    {81}event endClient(client_random,server_random,client_cipher_suites,xes,traffic_secret_0);
+    {82}let (HashValueLength: bitstring,HashValue: bitstring,timeStamp: bitstring) = Hash_Push_247 in
+    {83}event endintegrityVerif_c(HashValueLength);
+    {84}let (khash1_CP: bitstring,khash2_CP: bitstring,khash3_CP: bitstring,khash4_CP: bitstring) = HashValue in
+    {85}if ((khash1_ISP = khash1_CP) && ((khash2_ISP = khash2_CP) && ((khash3_ISP = khash3_CP) && (khash1_ISP = khash1_CP)))) then
+    {86}out(d, ZeroRating_Data1_243);
+    {87}out(d, ZeroRating_Data1_243);
+    {88}out(d, ZeroRating_Data1_243);
+    {89}out(d, ZeroRating_Data1_243)
+) | (
+    {90}!
+    {91}in(c, (server_version_248: bitstring,server_cipher_suite_249: bitstring));
+    {92}in(c, client_hello_250: bitstring);
+    {93}let (client_version_251: bitstring,client_random_252: bitstring,client_legacy_session_id_253: bitstring,client_cipher_suites_254: bitstring,legacy_compression_methods_255: bitstring,client_key_shares_256: bitstring) = client_hello_250 in
+    {94}if ((client_version_251 = server_version_248) && ((client_cipher_suites_254 = server_cipher_suite_249) && (legacy_compression_methods_255 = null))) then
+    {95}new server_random_257: bitstring;
+    {96}new Y: bitstring;
+    {97}let server_key_share_258: bitstring = exp(g,Y) in
+    {98}let server_hello_259: bitstring = (server_version_248,server_random_257,server_cipher_suite_249,server_key_share_258) in
+    {99}let static_secret_260: bitstring = exp(client_key_shares_256,Y) in
+    {100}let ephemeral_secret_261: bitstring = exp(client_key_shares_256,Y) in
+    {101}let xss_262: bitstring = HKDF_Extract(hkdf_zeros,static_secret_260) in
+    {102}let xes_263: bitstring = HKDF_Extract(hkdf_zeros,ephemeral_secret_261) in
+    {103}let handshake_context_264: bitstring = H((client_hello_250,server_hello_259)) in
+    {104}let handshake_client_write_key_265: bitstring = HKDF_Expand(xes_263,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_CLIENT_WRITE_KEY),handshake_context_264),hkdf_length_handshake_client_write_key) in
+    {105}let handshake_server_write_key_266: bitstring = HKDF_Expand(xes_263,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_SERVER_WRITE_KEY),handshake_context_264),hkdf_length_handshake_server_write_key) in
+    {106}let handshake_client_write_iv_267: bitstring = HKDF_Expand(xes_263,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_CLIENT_WRITE_IV),handshake_context_264),hkdf_length_handshake_client_write_IV) in
+    {107}let handshake_server_write_iv_268: bitstring = HKDF_Expand(xes_263,((HKDF_LABEL_HANDSHAKE_KEY_EXPANSION,HKDF_LABEL_SERVER_WRITE_IV),handshake_context_264),hkdf_length_handshake_server_write_IV) in
+    {108}let encrypted_extensions_269: bitstring = empty in
+    {109}new configuration_id: bitstring;
+    {110}new expiration_date: bitstring;
+    {111}let static_key_share: bitstring = server_key_share_258 in
+    {112}let server_configuration_270: bitstring = (configuration_id,expiration_date,static_key_share,early_data_type) in
+    {113}let handshake_hashed_data_271: bitstring = H((client_hello_250,server_hello_259,encrypted_extensions_269,server_configuration_270,server_certificate)) in
+    {114}let server_certificate_verify_272: bitstring = sign(handshake_hashed_data_271,skS) in
+    {115}let handshake_hash_273: bitstring = H((client_hello_250,server_hello_259,encrypted_extensions_269,server_configuration_270,server_certificate,server_certificate_verify_272)) in
+    {116}let mss_274: bitstring = HKDF_Expand(xss_262,(HKDF_LABAL_EXPANDED_STATIC_SECRET,handshake_hash_273),hkdf_length_mss) in
+    {117}let mes_275: bitstring = HKDF_Expand(xes_263,(HKDF_LABEL_EXPANDED_EPHEMERAL_SECRET,handshake_hash_273),hkdf_length_mes) in
+    {118}let master_secret_276: bitstring = HKDF_Extract(mss_274,mes_275) in
+    {119}let traffic_secret_0_277: bitstring = HKDF_Expand(master_secret_276,(HKDF_LABEL_TRAFFIC_SECRET,handshake_hash_273),hkdf_length_traffic_secret) in
+    {120}let server_finished_handshake_context_278: bitstring = H((client_hello_250,server_hello_259,encrypted_extensions_269,server_configuration_270,server_certificate,server_certificate_verify_272)) in
+    {121}let server_finished_key_279: bitstring = HKDF_Expand(master_secret_276,(HKDF_SERVER_FINISHED,empty),hkdf_length_server_finished_key) in
+    {122}let server_finished_280: bitstring = HMAC(server_finished_key_279,server_finished_handshake_context_278) in
+    {123}let handshake_server_write_nonce_0_281: bitstring = xor(handshake_server_write_iv_268,server_seq_num) in
+    {124}let enc_encrypted_extensions_282: bitstring = AEAD_Encrypt(handshake_server_write_key_266,handshake_server_write_nonce_0_281,(encrypted_extensions_269,record_type),empty) in
+    {125}let handshake_server_write_nonce_1_283: bitstring = xor(handshake_server_write_iv_268,inc(server_seq_num)) in
+    {126}let enc_server_configuration_284: bitstring = AEAD_Encrypt(handshake_server_write_key_266,handshake_server_write_nonce_1_283,(server_configuration_270,record_type),empty) in
+    {127}let handshake_server_write_nonce_2_285: bitstring = xor(handshake_server_write_iv_268,inc(inc(server_seq_num))) in
+    {128}let enc_server_certificate_286: bitstring = AEAD_Encrypt(handshake_server_write_key_266,handshake_server_write_nonce_2_285,(server_certificate,record_type),empty) in
+    {129}let handshake_server_write_nonce_3_287: bitstring = xor(handshake_server_write_iv_268,inc(inc(inc(server_seq_num)))) in
+    {130}let enc_server_certificate_verify_288: bitstring = AEAD_Encrypt(handshake_server_write_key_266,handshake_server_write_nonce_3_287,(server_certificate_verify_272,record_type),empty) in
+    {131}let handshake_server_write_nonce_4_289: bitstring = xor(handshake_server_write_iv_268,inc(inc(inc(inc(server_seq_num))))) in
+    {132}let enc_server_finished_290: bitstring = AEAD_Encrypt(handshake_server_write_key_266,handshake_server_write_nonce_4_289,(server_finished_280,record_type),empty) in
+    {133}event beginClient(client_random_252,server_random_257,server_cipher_suite_249,xes_263,traffic_secret_0_277);
+    {134}out(c, (server_hello_259,enc_encrypted_extensions_282,enc_server_configuration_284,enc_server_certificate_286,enc_server_certificate_verify_288,enc_server_finished_290));
+    {135}in(c, enc_client_finished_291: bitstring);
+    {136}let handshake_client_write_nonce_0_292: bitstring = xor(handshake_client_write_iv_267,client_seq_num) in
+    {137}let (client_finished_293: bitstring,=record_type) = AEAD_Decrypt(handshake_client_write_key_265,handshake_client_write_nonce_0_292,enc_client_finished_291,empty) in
+    {138}let client_finished_handshake_context_294: bitstring = H((client_hello_250,server_hello_259,encrypted_extensions_269,server_configuration_270,server_certificate,server_certificate_verify_272,server_finished_280)) in
+    {139}let client_finished_key_295: bitstring = HKDF_Expand(master_secret_276,(HKDF_CLIENT_FINISHED,empty),hkdf_length_client_finished_key) in
+    {140}if (client_finished_293 = HMAC(client_finished_key_295,client_finished_handshake_context_294)) then
+    {141}in(c, (cp_Policy_296: bitstring,cp_OptionListLength_297: bitstring,cp_OptionList_298: bitstring));
+    {142}in(c, ZFree_HELLO_ISP_299: bitstring);
+    {143}let (isp_Policy_300: bitstring,isp_OptionListLength_301: bitstring,isp_OptionList_302: bitstring) = ZFree_HELLO_ISP_299 in
+    {144}if ((cp_Policy_296 = isp_Policy_300) && ((cp_OptionListLength_297 = isp_OptionListLength_301) && (cp_OptionList_298 = isp_OptionList_302))) then
+    {145}let ZFree_HELLO_Server_Agent_303: bitstring = (cp_Policy_296,cp_OptionListLength_297,cp_OptionList_298) in
+    {146}out(c, ZFree_HELLO_Server_Agent_303);
+    {147}in(c, ZFree_CONNECT_304: bitstring);
+    {148}let (HashType_sa: bitstring,ParseType_sa: bitstring,connectionType_sa: bitstring,isp_Policy_sa: bitstring,AddressListLength_sa: bitstring,AddressList_sa: bitstring) = ZFree_CONNECT_304 in
+    {149}new ZFree_ACK_305: bitstring;
+    {150}out(c, ZFree_ACK_305);
+    {151}in(d, ZeroRating_Data1_306: bitstring);
+    {152}let khash1: bitstring = HMAC(server_finished_key_279,ZeroRating_Data1_306) in
+    {153}out(d, ZeroRating_Data1_306);
+    {154}in(d, ZeroRating_Data2_307: bitstring);
+    {155}let khash2: bitstring = HMAC(server_finished_key_279,ZeroRating_Data2_307) in
+    {156}out(d, ZeroRating_Data2_307);
+    {157}in(d, ZeroRating_Data3_308: bitstring);
+    {158}let khash3: bitstring = HMAC(server_finished_key_279,ZeroRating_Data3_308) in
+    {159}out(d, ZeroRating_Data3_308);
+    {160}in(d, ZeroRating_Data4_309: bitstring);
+    {161}let khash4: bitstring = HMAC(server_finished_key_279,ZeroRating_Data4_309) in
+    {162}out(d, ZeroRating_Data4_309);
+    {163}new key_310: bitstring;
+    {164}new HashValueLength_311: bitstring;
+    {165}let HashValue_312: bitstring = (khash1,khash2,khash3,khash4) in
+    {166}new timeStamp_313: bitstring;
+    {167}let Hash_Push_314: bitstring = (HashValueLength_311,HashValue_312,timeStamp_313) in
+    {168}out(c, Hash_Push_314);
+    {169}event begintegrityVerif_c(HashValueLength_311)
+) | (
+    {170}!
+    {171}in(c, (ZeroRating_Data1_315: bitstring,ZeroRating_Data2_316: bitstring,ZeroRating_Data3_317: bitstring,ZeroRating_Data4_318: bitstring));
+    {172}out(d, ZeroRating_Data1_315);
+    {173}out(d, ZeroRating_Data2_316);
+    {174}out(d, ZeroRating_Data3_317);
+    {175}out(d, ZeroRating_Data4_318);
+    {176}event beginResponseVerif_d(ZeroRating_Data1_315,ZeroRating_Data2_316,ZeroRating_Data3_317,ZeroRating_Data4_318)
+) | (
+    {177}!
+    {178}in(d, ZeroRating_Data1_319: bitstring);
+    {179}in(d, ZeroRating_Data2_320: bitstring);
+    {180}in(d, ZeroRating_Data3_321: bitstring);
+    {181}in(d, ZeroRating_Data4_322: bitstring);
+    {182}event endResponseVerif_d(ZeroRating_Data1_319,ZeroRating_Data2_320,ZeroRating_Data3_321,ZeroRating_Data4_322)
+) | (
+    {183}!
+    {184}in(c, (HostInfoX: bitstring,pkX: bitstring));
+    {185}if ((HostInfoX <> HostInfoC) && ((HostInfoX <> HostInfoS) && (HostInfoX <> HostInfoCA))) then
+    {186}let signCA_pkX: bitstring = sign(H((HostInfoCA,HostInfoX,pkX)),skCA) in
+    {187}let X_certificate: bitstring = (HostInfoCA,HostInfoX,pkX,signCA_pkX) in
+    {188}out(c, X_certificate)
+)
+
+-- Query event(endResponseVerif_d(response_data1,response_data2,response_data3,response_data4)) ==> event(beginResponseVerif_d(response_data1,response_data2,response_data3,response_data4))
+Completing...
+200 rules inserted. The rule base contains 198 rules. 99 rules in the queue.
+400 rules inserted. The rule base contains 344 rules. 101 rules in the queue.
+600 rules inserted. The rule base contains 478 rules. 125 rules in the queue.
+800 rules inserted. The rule base contains 628 rules. 103 rules in the queue.
+1000 rules inserted. The rule base contains 779 rules. 157 rules in the queue.
+1200 rules inserted. The rule base contains 874 rules. 188 rules in the queue.
+1400 rules inserted. The rule base contains 985 rules. 187 rules in the queue.
+1600 rules inserted. The rule base contains 1147 rules. 196 rules in the queue.
+1800 rules inserted. The rule base contains 1228 rules. 180 rules in the queue.
+2000 rules inserted. The rule base contains 1196 rules. 180 rules in the queue.
+2200 rules inserted. The rule base contains 1347 rules. 194 rules in the queue.
+2400 rules inserted. The rule base contains 1477 rules. 198 rules in the queue.
