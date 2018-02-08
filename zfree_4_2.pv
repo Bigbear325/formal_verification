@@ -109,6 +109,11 @@ fun H(bitstring): bitstring.
 reduc forall key: bitstring, text: bitstring; 
       HMAC(key, text) = H(( (key, hmac_opad), H(((key, hmac_ipad), text)) )).
 
+(* weakhash *)
+reduc forall key: bitstring, text: bitstring; 
+    WeakH(key, text) = H((key, text)).
+
+
 (* HKDF *)
 reduc forall salt: bitstring, IKM: bitstring;
       HKDF_Extract(salt, IKM) = H(( (salt, hmac_opad), H(((salt, hmac_ipad), IKM)) )). (* HKDF-extract *)
@@ -161,12 +166,12 @@ fun inc(bitstring): bitstring.
 (* 2. the attacker try to get data from controlplane *)
 
 
-free Hash_Push: bitstring [private].  (* control plane *)
+free data_c: bitstring [private].  (* control plane *)
 free ZeroRating_Data1: bitstring.
 free ZeroRating_Data2: bitstring.
 free ZeroRating_Data3: bitstring.
 free ZeroRating_Data4: bitstring.
-query attacker(Hash_Push). 
+query attacker(data_c).
 
 
 
@@ -205,6 +210,13 @@ event beginResponseVerif_d(bitstring,bitstring,bitstring,bitstring).
 
 query response_data1: bitstring, response_data2: bitstring, response_data3: bitstring, response_data4: bitstring;
 event(endResponseVerif_d(response_data1, response_data2, response_data3, response_data4)) ==> event(beginResponseVerif_d(response_data1, response_data2, response_data3, response_data4)).
+
+
+event endResponseVerif_h(bitstring).
+event beginResponseVerif_h(bitstring).
+
+query keyedhash: bitstring;
+event(endResponseVerif_h(keyedhash)) ==> event(beginResponseVerif_h(keyedhash)).
 
 
 
@@ -349,7 +361,7 @@ let processISP(pkCA: bitstring)=
       	      master_secret, 
 	      (HKDF_SERVER_FINISHED, empty), 
 	      hkdf_length_server_finished_key) in
-      if server_finished = HMAC(server_finished_key, server_finished_handshake_context) then
+      if server_finished = WeakH(server_finished_key, server_finished_handshake_context) then
 
     (* Certificate: optional *)
       (* Omitted *)
@@ -364,7 +376,7 @@ let processISP(pkCA: bitstring)=
       	      master_secret, 
 	      (HKDF_CLIENT_FINISHED, empty), 
 	      hkdf_length_client_finished_key) in
-      let client_finished = HMAC(client_finished_key, client_finished_handshake_context) in
+      let client_finished = WeakH(client_finished_key, client_finished_handshake_context) in
 
     (* Encryption: client_finished *)
       let handshake_client_write_nonce_0 = xor(handshake_client_write_iv, 
@@ -432,17 +444,12 @@ let processISP(pkCA: bitstring)=
 
 
 
-
-
-
-
-
     (***  Step 4 ZFree DataPlane Interaction ISP side  ***)
     (*** sniff packet from data plane ***)
-    in(d, ZeroRating_Data1: bitstring);
-    in(d, ZeroRating_Data2: bitstring);
-    in(d, ZeroRating_Data3: bitstring);
-    in(d, ZeroRating_Data4: bitstring);
+    in(d, ZeroRating_Data1_c: bitstring);
+    in(d, ZeroRating_Data2_c: bitstring);
+    in(d, ZeroRating_Data3_c: bitstring);
+    in(d, ZeroRating_Data4_c: bitstring);
 
 
 
@@ -451,41 +458,50 @@ let processISP(pkCA: bitstring)=
 
     (***  create Key hash ***)
 
-    let khash1_ISP = HMAC(client_finished_key, ZeroRating_Data1) in
-    let khash2_ISP = HMAC(client_finished_key, ZeroRating_Data2) in
-    let khash3_ISP = HMAC(client_finished_key, ZeroRating_Data3) in
-    let khash4_ISP = HMAC(client_finished_key, ZeroRating_Data4) in
+    let khash1_ISP = WeakH(client_finished_key, ZeroRating_Data1_c) in
+    let khash2_ISP = WeakH(client_finished_key, ZeroRating_Data2_c) in
+    let khash3_ISP = WeakH(client_finished_key, ZeroRating_Data3_c) in
+    let khash4_ISP = WeakH(client_finished_key, ZeroRating_Data4_c) in
 
 
     (*  show the hash compare *)
-    in(c, Hash_Push: bitstring);
+    in(c, Hash_Push_otherside: bitstring);
 
     (* quary ISP side 2.1 Event end: authentication *)(*Update: check if need to add more parameter*)
-    event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0);
+    (*event endClient(client_random, server_random, client_cipher_suites, xes, traffic_secret_0);*)
 
 
 
 
-    let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring) = Hash_Push in
+let (HashValueLength: bitstring, HashValue: bitstring, timeStamp: bitstring, packet_hash: bitstring) = Hash_Push_otherside in
     
-
-(*query 3.1 verification the cp integrity——*)
-    event endintegrityVerif_c(HashValue);
-
-
+    let ISP_value = (khash1_ISP, khash2_ISP, khash3_ISP, khash4_ISP) in
+    
+    let ISP_p_hash = WeakH(client_finished_key, ISP_value) in
+    
+    new content:bitstring;
+    
+    let ISP_context = (ISP_value, content) in
 
     let (khash1_CP: bitstring, khash2_CP: bitstring, khash3_CP: bitstring, khash4_CP: bitstring) = HashValue in
 
     if khash1_ISP= khash1_CP && khash2_ISP= khash2_CP && khash3_ISP= khash3_CP && khash1_ISP= khash1_CP then
 
-    (*verify event -- update: no need*)
+    (*verify event*)
+
+(*query 3.1 verification the cp integrity——*)
+(*event endintegrityVerif_c(ZeroRating_Data1_c);*)
+(*event endintegrityVerif_c(khash1_ISP);*)
+(*event endintegrityVerif_c(HashValue);*)
+
+    event endResponseVerif_h(ISP_context);
 
 
     (* after ISP check, pass the packets *)
-    out(d, ZeroRating_Data1);
-    out(d, ZeroRating_Data1);
-    out(d, ZeroRating_Data1);
-    out(d, ZeroRating_Data1);
+    out(d, ZeroRating_Data1_c);
+    out(d, ZeroRating_Data2_c);
+    out(d, ZeroRating_Data3_c);
+    out(d, ZeroRating_Data4_c);
     0.
 
 
@@ -598,7 +614,7 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
       	      master_secret, 
 	      (HKDF_SERVER_FINISHED, empty), 
 	      hkdf_length_server_finished_key) in
-      let server_finished = HMAC(server_finished_key, server_finished_handshake_context) in
+      let server_finished = WeakH(server_finished_key, server_finished_handshake_context) in
 
     (* Encryption: encrypted_extensions, server_configuration, server_certificate, 
                    server_certificate_verify, server_finished *)
@@ -646,7 +662,7 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
     
     
     (* quary SA side 2.1 Event begin: authentication   2.1 SA side *)
-      event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);
+      (*event beginClient(client_random, server_random, server_cipher_suite, xes, traffic_secret_0);  *)
 
 
 (*  !!!read this carefully again to make sure no change!!!!!!! *)
@@ -673,13 +689,13 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
       	      master_secret, 
 	      (HKDF_CLIENT_FINISHED, empty), 
 	      hkdf_length_client_finished_key) in
-      if client_finished = HMAC(client_finished_key, client_finished_handshake_context) then
+      if client_finished = WeakH(client_finished_key, client_finished_handshake_context) then
 
 
 
 
 
-    (*** Above is to get the correct HMAC ***)
+    (*** Above is to get the correct WeakH ***)
 
 
 
@@ -733,23 +749,23 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
 
 
 
-    in(d, ZeroRating_Data1: bitstring);
-    let khash1 = HMAC(server_finished_key, ZeroRating_Data1) in
-    out(d, ZeroRating_Data1);
+    in(d, ZeroRating_Data1_c: bitstring);
+    let khash1 = WeakH(server_finished_key, ZeroRating_Data1_c) in
+    out(d, ZeroRating_Data1_c);
 
-    in(d, ZeroRating_Data2: bitstring);
-    let khash2 = HMAC(server_finished_key, ZeroRating_Data2) in
-    out(d, ZeroRating_Data2);
-
-
-    in(d, ZeroRating_Data3: bitstring);
-    let khash3 = HMAC(server_finished_key, ZeroRating_Data3) in
-    out(d, ZeroRating_Data3);
+    in(d, ZeroRating_Data2_c: bitstring);
+    let khash2 = WeakH(server_finished_key, ZeroRating_Data2_c) in
+    out(d, ZeroRating_Data2_c);
 
 
-    in(d, ZeroRating_Data4: bitstring);
-    let khash4 = HMAC(server_finished_key, ZeroRating_Data4) in
-    out(d, ZeroRating_Data4);
+    in(d, ZeroRating_Data3_c: bitstring);
+    let khash3 = WeakH(server_finished_key, ZeroRating_Data3_c) in
+    out(d, ZeroRating_Data3_c);
+
+
+    in(d, ZeroRating_Data4_c: bitstring);
+    let khash4 = WeakH(server_finished_key, ZeroRating_Data4_c) in
+    out(d, ZeroRating_Data4_c);
     
 
     (***  create Key hash ***)
@@ -761,17 +777,24 @@ let processSA(skS: bitstring, pkS: bitstring, server_certificate: bitstring, pkC
     let HashValue = (khash1, khash2, khash3, khash4) in
     new timeStamp: bitstring;
 
-    let Hash_Push = (HashValueLength, HashValue, timeStamp) in
+    let packet_hash = WeakH(server_finished_key, HashValue) in
+    
+    let packet_context = (HashValue,packet_hash) in
+
+    let Hash_Push = (HashValueLength, HashValue, timeStamp, packet_hash) in
 
      (*** ISP Assistant   <-----3   Server Agent ***)
     (*** ZFree send khash ****)
     out(c, Hash_Push);
         
 
-    (*query 3.1 verification the cp integrity——*)
-    event begintegrityVerif_c(HashValue);
+    (*query 3.1 verification the cp integrity*)
 
+    (*event begintegrityVerif_c(ZeroRating_Data1_c);*)
+    (*event begintegrityVerif_c(khash1);*)
+    (*event begintegrityVerif_c(HashValue);*)
 
+    event beginResponseVerif_h(packet_context);
 
     0.
 
@@ -796,7 +819,7 @@ let processServer() =
     out(d, ZeroRating_Data4);
 
     (* 3.2 DataPath Integrity CP server side  *)
-    event beginResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
+    (*event beginResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);*)
 
     0.
 
@@ -817,7 +840,7 @@ let processClient() =
     in(d, ZeroRating_Data4: bitstring);
 
     (* 3.2 DataPath Integrity client side  *)
-    event endResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);
+    (*event endResponseVerif_d(ZeroRating_Data1, ZeroRating_Data2, ZeroRating_Data3, ZeroRating_Data4);*)
 
     
     0.
